@@ -1,0 +1,28 @@
+
+class Book {
+        +int id
+        +str title
+        +str author
+        +int year
+        +str status
+        +__init__(...)
+    }
+
+class BookRepository {
+        -connection db
+        +create_table()
+        +add_book(book: Book)
+        +get_all_books() : List[Book]
+        +delete_book(id: int)
+        +update_status(id: int, status: str)
+    }
+
+class LibraryService {
+        -repository: BookRepository
+        +register_book(title, author, year)
+        +list_books()
+        +remove_book(id)
+    }
+
+LibraryService --> BookRepository : usa
+BookRepository --> Book : manipula
