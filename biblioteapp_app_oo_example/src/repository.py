@@ -1,7 +1,8 @@
 import sqlite3
-from src.models import Book
+from src.models import Pessoa
 
-class BookRepository:
+class PessoaRepository:
+   
     def __init__(self, db_name="database.db"):
         self.db_name = db_name
         self._create_table()
@@ -12,37 +13,42 @@ class BookRepository:
     def _create_table(self):
         with self._connect() as conn:
             cursor = conn.cursor()
+            
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS books (
+                CREATE TABLE IF NOT EXISTS Registro (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    title TEXT NOT NULL,
-                    author TEXT NOT NULL,
-                    year INTEGER,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL UNIQUE,
+                    tipo TEXT NOT NULL,
                     status TEXT
                 )
             """)
             conn.commit()
 
-    def add_book(self, book: Book):
+    def add_pessoa(self, pessoa: Pessoa): 
         with self._connect() as conn:
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO books (title, author, year, status) VALUES (?, ?, ?, ?)",
-                           (book.title, book.author, book.year, book.status))
+         
+            cursor.execute("INSERT INTO Registro (name, email, tipo, status) VALUES (?, ?, ?, ?)",
+                           
+                           (pessoa.name, pessoa.email, pessoa.tipo, pessoa.status))
             conn.commit()
 
     def get_all(self):
-        books = []
+        pessoas = []
         with self._connect() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT id, title, author, year, status FROM books")
+            
+            cursor.execute("SELECT id, name, email, tipo, status FROM Registro")
             rows = cursor.fetchall()
             for row in rows:
-                # Reconstrói o objeto Book a partir do banco
-                books.append(Book(id=row[0], title=row[1], author=row[2], year=row[3], status=row[4]))
-        return books
+               
+                pessoas.append(Pessoa(id=row[0], name=row[1], email=row[2], tipo=row[3], status=row[4]))
+        return pessoas
 
-    def delete_book(self, book_id):
+    def delete_pessoa(self, pessoa_id): 
         with self._connect() as conn:
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM books WHERE id = ?", (book_id,))
+            
+            cursor.execute("DELETE FROM Registro WHERE id = ?", (pessoa_id,))
             conn.commit()
