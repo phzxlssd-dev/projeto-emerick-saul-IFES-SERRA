@@ -1,88 +1,45 @@
-import sqlite3
-from src.models import Usuario, Aluno, Professor, Resultado
+import os
+import pandas as pd
+from datetime import datetime
+from src.models import Aluno, Professor, Resultado
+from src.repository import ResultadoRepository
 
 
-class ResultadoRepository:
-    def init(self, db_name="database.db"):
-        self.db_name = db_name
-        self._create_tables()
+class SistemaService:
+    def init(self):
+        self.repo = ResultadoRepository()
 
-    def _connect(self):
-        return sqlite3.connect(self.db_name)
+        # Pasta para armazenar uploads CSV
+        self.upload_path = "uploads"
+        os.makedirs(self.upload_path, exist_ok=True)
 
-    def _create_tables(self):
-        with self._connect() as conn:
-            cursor = conn.cursor()
+    # ---------- Usuários ----------
+    def cadastrar_aluno(self, nome, email):
+        aluno = Aluno(nome, email)
+        self.repo.add_usuario(aluno)
+        return "Aluno cadastrado com sucesso!"
 
-            # tabela usuários
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS usuarios (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nome TEXT NOT NULL,
-                    email TEXT NOT NULL,
-                    tipo TEXT NOT NULL
-                )
-            """)
+    def cadastrar_professor(self, nome, email):
+        prof = Professor(nome, email)
+        self.repo.add_usuario(prof)
+        return "Professor cadastrado com sucesso!"
 
-            # tabela resultados CSV
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS resultados (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    aluno_nome TEXT NOT NULL,
-                    arquivo_csv TEXT NOT NULL
-                )
-            """)
+    def listar_usuarios(self):
+        return self.repo.get_usuarios()
 
-            conn.commit()
-                    #usuários
-    def add_usuario(self, usuario):
-        with self._connect() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO usuarios (nome, email, tipo) VALUES (?, ?, ?)",
-                (usuario.nome, usuario.email, usuario.tipo)
-            )
-            conn.commit()
+    # ---------- Resultados CSV ----------
+    def enviar_resultado_csv(self, aluno_nome, arquivo_streamlit):
+        file_path = os.path.join(self.upload_path, arquivo_streamlit.name)
+        with open(file_path, "wb") as f:
+            f.write(arquivo_streamlit.getbuffer())
 
-    def get_usuarios(self):
-        usuarios = []
-        with self._connect() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT id, nome, email, tipo FROM usuarios")
-            rows = cursor.fetchall()
+        resultado = Resultado(aluno_nome, file_path)
+        self.repo.add_resultado(resultado)
+        return "Arquivo CSV enviado com sucesso!"
 
-            for r in rows:
-                if r[3] == "aluno":
-                    usuarios.append(Aluno(nome=r[1], email=r[2], id=r[0]))
-                else:
-                    usuarios.append(Professor(nome=r[1], email=r[2], id=r[0]))
+    def listar_resultados(self):
+        return self.repo.get_resultados()
 
-        return usuarios
-
-    # ------------- RESULTADOS CSV -------------
-    def add_resultado(self, resultado):
-        with self._connect() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO resultados (aluno_nome, arquivo_csv) VALUES (?, ?)",
-                (resultado.aluno_nome, resultado.arquivo_csv)
-            )
-            conn.commit()
-
-    def get_resultados(self):
-        resultados = []
-        with self._connect() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT id, aluno_nome, arquivo_csv FROM resultados")
-            rows = cursor.fetchall()
-
-            for r in rows:
-                resultados.append(Resultado(id=r[0], aluno_nome=r[1], arquivo_csv=r[2]))
-
-        return resultados
-
-    def delete_resultado(self, resultado_id):
-        with self._connect() as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM resultados WHERE id = ?", (resultado_id,))
-            conn.commit()
+    def remover_resultado(self, resultado_id):
+        self.repo.delete_resultado(resultado_id)
+        return "Resultado removido!"
