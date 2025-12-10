@@ -1,45 +1,24 @@
-import os
-import pandas as pd
-from datetime import datetime
-from src.models import Aluno, Professor, Resultado
-from src.repository import ResultadoRepository
+## services.py
 
+from src.repository_usuario import UsuarioRepository
+from src.repository_resultado import ResultadoRepository
+from src.models import Aluno, Professor
 
-class SistemaService:
-    def init(self):
+class UsuarioService:
+    def __init__(self):
+        self.repo = UsuarioRepository()
+
+    def registrar_aluno(self, nome, email, matricula):
+        aluno = Aluno(None, nome, email, matricula)
+        self.repo.add(aluno)
+
+    def registrar_professor(self, nome, email, matricula_professor):
+        prof = Professor(None, nome, email, matricula_professor)
+        self.repo.add(prof)
+
+class ResultadoService:
+    def __init__(self):
         self.repo = ResultadoRepository()
 
-        # Pasta para armazenar uploads CSV
-        self.upload_path = "uploads"
-        os.makedirs(self.upload_path, exist_ok=True)
-
-    # ---------- Usuários ----------
-    def cadastrar_aluno(self, nome, email):
-        aluno = Aluno(nome, email)
-        self.repo.add_usuario(aluno)
-        return "Aluno cadastrado com sucesso!"
-
-    def cadastrar_professor(self, nome, email):
-        prof = Professor(nome, email)
-        self.repo.add_usuario(prof)
-        return "Professor cadastrado com sucesso!"
-
-    def listar_usuarios(self):
-        return self.repo.get_usuarios()
-
-    # ---------- Resultados CSV ----------
-    def enviar_resultado_csv(self, aluno_nome, arquivo_streamlit):
-        file_path = os.path.join(self.upload_path, arquivo_streamlit.name)
-        with open(file_path, "wb") as f:
-            f.write(arquivo_streamlit.getbuffer())
-
-        resultado = Resultado(aluno_nome, file_path)
-        self.repo.add_resultado(resultado)
-        return "Arquivo CSV enviado com sucesso!"
-
-    def listar_resultados(self):
-        return self.repo.get_resultados()
-
-    def remover_resultado(self, resultado_id):
-        self.repo.delete_resultado(resultado_id)
-        return "Resultado removido!"
+    def registrar_csv(self, aluno_id, resultados):
+        self.repo.add_csv(aluno_id, resultados)
