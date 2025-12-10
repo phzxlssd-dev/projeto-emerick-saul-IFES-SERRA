@@ -1,74 +1,71 @@
 import streamlit as st
 import pandas as pd
-from src.services import SistemaService
+from src.services import UsuarioService, ResultadoService
 
-service = SistemaService()
+# Instâncias dos serviços
+usuarios = UsuarioService()
+resultados = ResultadoService()
 
-st.set_page_config(page_title="Sistema Acadêmico", layout="wide")
-st.title("🎓 Sistema Acadêmico - Resultados dos Alunos")
-
+# Menu lateral
 menu = st.sidebar.selectbox(
-    "Menu",
-    ["Cadastrar Usuário", "Enviar Resultado CSV (Aluno)", "Consultar Resultados (Professor)"]
+    "Menu", 
+    ["Cadastrar Aluno", "Cadastrar Professor", "Enviar CSV (Aluno)", "Ver Resultados (Professor)"]
 )
 
-#---------------- CADASTRO ----------------
-if menu == "Cadastrar Usuário":
-    st.header("Cadastro de Usuários")
-
-    tipo = st.selectbox("Tipo", ["Aluno", "Professor"])
+# --- Cadastro de Aluno ---
+if menu == "Cadastrar Aluno":
+    st.header("Cadastrar Aluno")
     nome = st.text_input("Nome")
-    email = st.text_input("E-mail")
-
+    email = st.text_input("Email")
+    matricula = st.text_input("Matrícula")
     if st.button("Salvar"):
-        if tipo == "Aluno":
-            st.success(service.cadastrar_aluno(nome, email))
-        else:
-            st.success(service.cadastrar_professor(nome, email))
+        usuarios.registrar_aluno(nome, email, matricula)
+        st.success("Aluno cadastrado!")
 
+# --- Cadastro de Professor ---
+elif menu == "Cadastrar Professor":
+    st.header("Cadastrar Professor")
+    nome = st.text_input("Nome")
+    email = st.text_input("Email")
+    matricula = st.text_input("Matrícula do Professor")
+    if st.button("Salvar"):
+        usuarios.registrar_professor(nome, email, matricula)
+        st.success("Professor cadastrado!")
 
-#---------------- UPLOAD ALUNO ----------------
-elif menu == "Enviar Resultado CSV (Aluno)":
-    st.header("Envio de Resultados - Aluno")
+# --- Upload de CSV pelo Aluno ---
+elif menu == "Enviar CSV (Aluno)":
+    st.header("Enviar CSV de Resultados")
+    
+    aluno_id = st.number_input("ID do Aluno", min_value=1, step=1)
+    arquivo = st.file_uploader("Escolha o arquivo CSV", type=["csv"])
+    
+    if arquivo is not None:
+        try:
+            df = pd.read_csv(arquivo)
+            lista_resultados = df.to_dict(orient="records")
+            
+            if st.button("Enviar Resultados"):
+                resultados.registrar_csv(aluno_id, lista_resultados)
+                st.success("Resultados enviados com sucesso!")
+        except Exception as e:
+            st.error(f"Erro ao processar o CSV: {e}")
 
-    aluno_nome = st.text_input("Nome do Aluno")
-    arquivo = st.file_uploader("Envie seu arquivo CSV", type=["csv"])
-
-    if arquivo and st.button("Enviar"):
-        st.success(service.enviar_resultado_csv(aluno_nome, arquivo))
-#---------------- CONSULTA PROFESSOR ----------------
-elif menu == "Consultar Resultados (Professor)":
-    st.header("Resultados Enviados pelos Alunos")
-
-    resultados = service.listar_resultados()
-
-    if resultados:
-        data = [{
-            "ID": r.id,
-            "Aluno": r.aluno_nome,
-            "Arquivo CSV": r.arquivo_csv
-        } for r in resultados]
-
-        df = pd.DataFrame(data)
-        st.dataframe(df, use_container_width=True, hide_index=True)
-
-        st.divider()
-        st.subheader("Visualizar Conteúdo do CSV")
-
-        resultado_id = st.number_input("ID do Resultado", min_value=0, step=1)
-
-        if st.button("Abrir CSV"):
-            for r in resultados:
-                if r.id == resultado_id:
-                    df_csv = pd.read_csv(r.arquivo_csv)
-                    st.dataframe(df_csv, use_container_width=True)
-
-        st.divider()
-        st.subheader("Remover Resultado")
-
-        if st.button("Excluir Resultado"):
-            st.success(service.remover_resultado(resultado_id))
-            st.rerun()
-
-    else:
-        st.info("Nenhum resultado enviado ainda.")
+# --- Consulta de resultados para Professor ---
+elif menu == "Ver Resultados (Professor)":
+    st.header("Resultados dos Alunos")
+    
+    dados = resultados.repo.get_by_professor()
+    
+    for r in dados:
+        resultado_id, aluno_id, nome_dp, tempo, valor, processado, comentario = r
+        
+        aluno = usuarios.repo.get(aluno_id)
+        nome_aluno = aluno.nome if aluno else "Aluno não encontrado"
+        
+        st.write(f"*Aluno:* {nome_aluno} (ID: {aluno_id})")
+        st.write(f"Data Point: {nome_dp}")
+        st.write(f"Tempo: {tempo}")
+        st.write(f"Valor: {valor}")
+        st.write(f"Processado: {processado}")
+        st.write(f"Comentário: {comentario}")
+        st.markdown("---")
