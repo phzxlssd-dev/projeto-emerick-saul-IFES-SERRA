@@ -1,28 +1,30 @@
-
-class Book {
+class usuario {
         +int id
-        +str title
-        +str author
-        +int year
-        +str status
-        +__init__(...)
-    }
+        +str nome
 
-class BookRepository {
+    }
+class aluno(usuário) {
+        +str matricula_aluno
+
+    }
+class professor(usuário) {
+        +str matricula_professor
+
+    }
+class ResultadoRepository {
         -connection db
         +create_table()
-        +add_book(book: Book)
-        +get_all_books() : List[Book]
-        +delete_book(id: int)
-        +update_status(id: int, status: str)
+        +add_resultado(resultado: Resultado)
+        +get_all_resultados() : List[Resultados]
+        +delete_resultado(id: int)
     }
 
 class LibraryService {
-        -repository: BookRepository
-        +register_book(title, author, year)
-        +list_books()
-        +remove_book(id)
+        -repository: ResultadoRepository
+        +register_resultado(Nome do data point,Tempo,Valor,Processado,Comentário)
+        +list_resultados()
+        +remove_resultado(id)
     }
 
-LibraryService --> BookRepository : usa
-BookRepository --> Book : manipula
+LibraryService --> ResultadoRepository : usa
+ResultadoRepository --> Resultado : manipula
