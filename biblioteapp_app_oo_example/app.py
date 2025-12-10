@@ -1,62 +1,74 @@
 import streamlit as st
 import pandas as pd
-from src.services import LibraryService
+from src.services import SistemaService
 
-# Instancia o serviço (Controller)
-service = LibraryService()
+service = SistemaService()
 
-st.set_page_config(page_title="Gestão de Biblioteca", layout="wide")
-st.title("📚 Sistema de Gestão de Biblioteca")
+st.set_page_config(page_title="Sistema Acadêmico", layout="wide")
+st.title("🎓 Sistema Acadêmico - Resultados dos Alunos")
 
-# Menu lateral para navegação
-menu = st.sidebar.selectbox("Menu", ["Cadastrar Livro", "Consultar Acervo"])
+menu = st.sidebar.selectbox(
+    "Menu",
+    ["Cadastrar Usuário", "Enviar Resultado CSV (Aluno)", "Consultar Resultados (Professor)"]
+)
 
-if menu == "Cadastrar Livro":
-    st.header("Novo Cadastro")
-    
-    with st.form("book_form", clear_on_submit=True):
-        title = st.text_input("Título do Livro")
-        author = st.text_input("Autor")
-        year = st.number_input("Ano de Publicação", min_value=1000, max_value=2100, step=1)
-        submitted = st.form_submit_button("Salvar Livro")
+#---------------- CADASTRO ----------------
+if menu == "Cadastrar Usuário":
+    st.header("Cadastro de Usuários")
 
-        if submitted:
-            result = service.register_book(title, author, year)
-            if "Erro" in result:
-                st.error(result)
-            else:
-                st.success(result)
+    tipo = st.selectbox("Tipo", ["Aluno", "Professor"])
+    nome = st.text_input("Nome")
+    email = st.text_input("E-mail")
 
-elif menu == "Consultar Acervo":
-    st.header("Acervo Disponível")
-    
-    books = service.list_books()
-    
-    if books:
-        # Convertendo objetos para DataFrame para exibição bonita
+    if st.button("Salvar"):
+        if tipo == "Aluno":
+            st.success(service.cadastrar_aluno(nome, email))
+        else:
+            st.success(service.cadastrar_professor(nome, email))
+
+
+#---------------- UPLOAD ALUNO ----------------
+elif menu == "Enviar Resultado CSV (Aluno)":
+    st.header("Envio de Resultados - Aluno")
+
+    aluno_nome = st.text_input("Nome do Aluno")
+    arquivo = st.file_uploader("Envie seu arquivo CSV", type=["csv"])
+
+    if arquivo and st.button("Enviar"):
+        st.success(service.enviar_resultado_csv(aluno_nome, arquivo))
+#---------------- CONSULTA PROFESSOR ----------------
+elif menu == "Consultar Resultados (Professor)":
+    st.header("Resultados Enviados pelos Alunos")
+
+    resultados = service.listar_resultados()
+
+    if resultados:
         data = [{
-            "ID": b.id, 
-            "Título": b.title, 
-            "Autor": b.author, 
-            "Ano": b.year, 
-            "Status": b.status
-        } for b in books]
-        
+            "ID": r.id,
+            "Aluno": r.aluno_nome,
+            "Arquivo CSV": r.arquivo_csv
+        } for r in resultados]
+
         df = pd.DataFrame(data)
         st.dataframe(df, use_container_width=True, hide_index=True)
 
         st.divider()
-        st.subheader("Gerenciar")
-        
-        # Opção de exclusão
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            id_to_delete = st.number_input("ID do livro para remover", min_value=0, step=1)
-        with col2:
-            st.write("") # Espaçamento
-            st.write("") 
-            if st.button("Remover Livro"):
-                service.remove_book(id_to_delete)
-                st.rerun() # Atualiza a tela
+        st.subheader("Visualizar Conteúdo do CSV")
+
+        resultado_id = st.number_input("ID do Resultado", min_value=0, step=1)
+
+        if st.button("Abrir CSV"):
+            for r in resultados:
+                if r.id == resultado_id:
+                    df_csv = pd.read_csv(r.arquivo_csv)
+                    st.dataframe(df_csv, use_container_width=True)
+
+        st.divider()
+        st.subheader("Remover Resultado")
+
+        if st.button("Excluir Resultado"):
+            st.success(service.remover_resultado(resultado_id))
+            st.rerun()
+
     else:
-        st.info("Nenhum livro cadastrado no sistema.")
+        st.info("Nenhum resultado enviado ainda.")
