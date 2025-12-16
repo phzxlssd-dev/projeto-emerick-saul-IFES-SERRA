@@ -1,10 +1,8 @@
-## repository_usuario.py
-
 import sqlite3
 from src.models import Usuario, Aluno, Professor
 
 class UsuarioRepository:
-    def _init_(self, db_name="database.db"):
+    def __init__(self, db_name="database.db"):
         self.db_name = db_name
         self._create_table()
 
