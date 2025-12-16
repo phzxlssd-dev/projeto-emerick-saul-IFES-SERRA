@@ -1,5 +1,3 @@
-## models.py
-
 class Usuario:
     def __init__(self, id, nome, email):
         self.id = id
