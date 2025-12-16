@@ -1,7 +1,7 @@
 import sqlite3
-from src.models import Usuario, Aluno, Professor
+from src.models import Resultado
 
-class UsuarioRepository:
+class ResultadoRepository:
     def __init__(self, db_name="database.db"):
         self.db_name = db_name
         self._create_table()
@@ -12,58 +12,31 @@ class UsuarioRepository:
     def _create_table(self):
         with self._connect() as con:
             con.execute("""
-                CREATE TABLE IF NOT EXISTS usuarios (
+                CREATE TABLE IF NOT EXISTS resultados (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nome TEXT NOT NULL,
-                    email TEXT NOT NULL,
-                    matricula TEXT,
-                    matricula_professor TEXT
+                    aluno_id INTEGER,
+                    nome_datapoint TEXT,
+                    tempo TEXT,
+                    valor TEXT,
+                    processado TEXT,
+                    comentario TEXT
                 )
             """)
 
-    def add(self, usuario: Usuario):
+    def add_csv(self, aluno_id, lista_resultados):
         with self._connect() as con:
-            if isinstance(usuario, Aluno):
+            for r in lista_resultados:
                 con.execute(
-                    "INSERT INTO usuarios (nome, email, matricula) VALUES (?, ?, ?)",
-                    (usuario.nome, usuario.email, usuario.matricula)
-                )
-            elif isinstance(usuario, Professor):
-                con.execute(
-                    "INSERT INTO usuarios (nome, email, matricula_professor) VALUES (?, ?, ?)",
-                    (usuario.nome, usuario.email, usuario.matricula_professor)
-                )
-            else:
-                con.execute(
-                    "INSERT INTO usuarios (nome, email) VALUES (?, ?)",
-                    (usuario.nome, usuario.email)
+                    "INSERT INTO resultados (aluno_id, nome_datapoint, tempo, valor, processado, comentario) VALUES (?, ?, ?, ?, ?, ?)",
+                    (aluno_id, r["Nome do data point"], r["Tempo"], r["Valor"], r["Processado"], r["Comentário"])
                 )
 
-    def get(self, user_id):
+    def get_by_professor(self):
         with self._connect() as con:
-            cur = con.execute(
-                "SELECT id, nome, email, matricula, matricula_professor FROM usuarios WHERE id=?",
-                (user_id,)
-            )
-            row = cur.fetchone()
-            if not row:
-                return None
+            cur = con.execute("SELECT * FROM resultados")
+            return cur.fetchall()
 
-            if row[3]:
-                return Aluno(row[0], row[1], row[2], row[3])
-            if row[4]:
-                return Professor(row[0], row[1], row[2], row[4])
-            return Usuario(row[0], row[1], row[2])
-
-    def get_all(self):
+    def get_by_aluno(self, aluno_id):
         with self._connect() as con:
-            cur = con.execute(
-                "SELECT id, nome, email, matricula, matricula_professor FROM usuarios"
-            )
-            rows = cur.fetchall()
-            usuarios = []
-            for row in rows:
-                if row[3]: usuarios.append(Aluno(row[0], row[1], row[2], row[3]))
-                elif row[4]: usuarios.append(Professor(row[0], row[1], row[2], row[4]))
-                else: usuarios.append(Usuario(row[0], row[1], row[2]))
-            return usuarios
+            cur = con.execute("SELECT * FROM resultados WHERE aluno_id=?", (aluno_id,))
+            return cur.fetchall()
