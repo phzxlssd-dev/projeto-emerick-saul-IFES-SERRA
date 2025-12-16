@@ -41,12 +41,18 @@ elif menu == "Enviar CSV (Aluno)":
     
     if arquivo is not None:
         try:
-            df = pd.read_csv(arquivo)
+            try:
+                 df = pd.read_csv(arquivo, encoding="utf-8")
+            except UnicodeDecodeError:
+                 arquivo.seek(0)
+                 df = pd.read_csv(arquivo, encoding="ISO-8859-1")
+
             lista_resultados = df.to_dict(orient="records")
-            
+    
             if st.button("Enviar Resultados"):
                 resultados.registrar_csv(aluno_id, lista_resultados)
                 st.success("Resultados enviados com sucesso!")
+
         except Exception as e:
             st.error(f"Erro ao processar o CSV: {e}")
 
