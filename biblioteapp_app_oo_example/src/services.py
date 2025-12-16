@@ -1,5 +1,3 @@
-## services.py
-
 from src.repository_usuario import UsuarioRepository
 from src.repository_resultado import ResultadoRepository
 from src.models import Aluno, Professor
