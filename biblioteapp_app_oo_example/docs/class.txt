@@ -1,6 +1,7 @@
 class usuario {
         +int id
         +str nome
+        +str email
 
     }
 class aluno(usuário) {
